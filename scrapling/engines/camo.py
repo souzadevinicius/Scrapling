@@ -1,27 +1,54 @@
+from typing import Callable
+
 from camoufox import DefaultAddons
 from camoufox.async_api import AsyncCamoufox
 from camoufox.sync_api import Camoufox
 
-from scrapling.core._types import (Callable, Dict, List, Literal, Optional,
-                                   SelectorWaitStates, Union)
+from scrapling.core._types import (
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    SelectorWaitStates,
+    Union,
+)
 from scrapling.core.utils import log
-from scrapling.engines.toolbelt import (Response, StatusText,
-                                        async_intercept_route,
-                                        check_type_validity,
-                                        construct_proxy_dict,
-                                        generate_convincing_referer,
-                                        get_os_name, intercept_route)
+from scrapling.engines.toolbelt import (
+    Response,
+    StatusText,
+    async_intercept_route,
+    check_type_validity,
+    construct_proxy_dict,
+    generate_convincing_referer,
+    get_os_name,
+    intercept_route,
+)
 
 
 class CamoufoxEngine:
     def __init__(
-            self, headless: Optional[Union[bool, Literal['virtual']]] = True, block_images: Optional[bool] = False, disable_resources: Optional[bool] = False,
-            block_webrtc: Optional[bool] = False, allow_webgl: Optional[bool] = True, network_idle: Optional[bool] = False, humanize: Optional[Union[bool, float]] = True,
-            timeout: Optional[float] = 30000, page_action: Callable = None, wait_selector: Optional[str] = None, addons: Optional[List[str]] = None,
-            wait_selector_state: Optional[SelectorWaitStates] = 'attached', google_search: Optional[bool] = True, extra_headers: Optional[Dict[str, str]] = None,
-            proxy: Optional[Union[str, Dict[str, str]]] = None, os_randomize: Optional[bool] = None, disable_ads: Optional[bool] = False,
-            geoip: Optional[bool] = False,
-            adaptor_arguments: Dict = None,
+        self,
+        headless: Optional[Union[bool, Literal["virtual"]]] = True,
+        block_images: Optional[bool] = False,
+        disable_resources: Optional[bool] = False,
+        block_webrtc: Optional[bool] = False,
+        allow_webgl: Optional[bool] = True,
+        network_idle: Optional[bool] = False,
+        humanize: Optional[Union[bool, float]] = True,
+        timeout: Optional[float] = 30000,
+        page_action: Callable = None,
+        wait_selector: Optional[str] = None,
+        addons: Optional[List[str]] = None,
+        wait_selector_state: Optional[SelectorWaitStates] = "attached",
+        google_search: Optional[bool] = True,
+        extra_headers: Optional[Dict[str, str]] = None,
+        proxy: Optional[Union[str, Dict[str, str]]] = None,
+        os_randomize: Optional[bool] = None,
+        disable_ads: Optional[bool] = False,
+        geoip: Optional[bool] = False,
+        response_handler: Optional[Callable] = False,
+        adaptor_arguments: Dict = None,
     ):
         """An engine that utilizes Camoufox library, check the `StealthyFetcher` class for more documentation.
 
@@ -64,6 +91,7 @@ class CamoufoxEngine:
         self.addons = addons or []
         self.humanize = humanize
         self.timeout = check_type_validity(timeout, [int, float], 30000)
+        self.response_handler = response_handler
         if page_action is not None:
             if callable(page_action):
                 self.page_action = page_action
@@ -89,39 +117,51 @@ class CamoufoxEngine:
 
         def handle_response(finished_response):
             nonlocal final_response
-            if finished_response.request.resource_type == "document" and finished_response.request.is_navigation_request():
+            if (
+                finished_response.request.resource_type == "document"
+                and finished_response.request.is_navigation_request()
+            ):
                 final_response = finished_response
 
         with Camoufox(
-                geoip=self.geoip,
-                proxy=self.proxy,
-                disable_coop=True,
-                enable_cache=True,
-                addons=self.addons,
-                exclude_addons=addons,
-                headless=self.headless,
-                humanize=self.humanize,
-                i_know_what_im_doing=True,  # To turn warnings off with the user configurations
-                allow_webgl=self.allow_webgl,
-                block_webrtc=self.block_webrtc,
-                block_images=self.block_images,  # Careful! it makes some websites doesn't finish loading at all like stackoverflow even in headful
-                os=None if self.os_randomize else get_os_name(),
+            geoip=self.geoip,
+            proxy=self.proxy,
+            disable_coop=True,
+            enable_cache=True,
+            addons=self.addons,
+            exclude_addons=addons,
+            headless=self.headless,
+            humanize=self.humanize,
+            i_know_what_im_doing=True,  # To turn warnings off with the user configurations
+            allow_webgl=self.allow_webgl,
+            block_webrtc=self.block_webrtc,
+            block_images=self.block_images,  # Careful! it makes some websites doesn't finish loading at all like stackoverflow even in headful
+            os=None if self.os_randomize else get_os_name(),
         ) as browser:
             page = browser.new_page()
             page.set_default_navigation_timeout(self.timeout)
             page.set_default_timeout(self.timeout)
             # Listen for all responses
             page.on("response", handle_response)
+
+            if self.response_handler:
+                page.on("response", self.response_handler)
+
             if self.disable_resources:
                 page.route("**/*", intercept_route)
 
             if self.extra_headers:
                 page.set_extra_http_headers(self.extra_headers)
 
-            first_response = page.goto(url, referer=generate_convincing_referer(url) if self.google_search else None)
+            first_response = page.goto(
+                url,
+                referer=(
+                    generate_convincing_referer(url) if self.google_search else None
+                ),
+            )
             page.wait_for_load_state(state="domcontentloaded")
             if self.network_idle:
-                page.wait_for_load_state('networkidle')
+                page.wait_for_load_state("networkidle")
 
             if self.page_action is not None:
                 page = self.page_action(page)
@@ -133,23 +173,29 @@ class CamoufoxEngine:
                 page.wait_for_load_state(state="load")
                 page.wait_for_load_state(state="domcontentloaded")
                 if self.network_idle:
-                    page.wait_for_load_state('networkidle')
+                    page.wait_for_load_state("networkidle")
 
             # In case we didn't catch a document type somehow
             final_response = final_response if final_response else first_response
             # This will be parsed inside `Response`
-            encoding = final_response.headers.get('content-type', '') or 'utf-8'  # default encoding
+            encoding = (
+                final_response.headers.get("content-type", "") or "utf-8"
+            )  # default encoding
             # PlayWright API sometimes give empty status text for some reason!
-            status_text = final_response.status_text or StatusText.get(final_response.status)
+            status_text = final_response.status_text or StatusText.get(
+                final_response.status
+            )
 
             response = Response(
                 url=page.url,
                 text=page.content(),
-                body=page.content().encode('utf-8'),
+                body=page.content().encode("utf-8"),
                 status=final_response.status,
                 reason=status_text,
                 encoding=encoding,
-                cookies={cookie['name']: cookie['value'] for cookie in page.context.cookies()},
+                cookies={
+                    cookie["name"]: cookie["value"] for cookie in page.context.cookies()
+                },
                 headers=first_response.all_headers(),
                 request_headers=first_response.request.all_headers(),
                 **self.adaptor_arguments
@@ -170,23 +216,26 @@ class CamoufoxEngine:
 
         async def handle_response(finished_response):
             nonlocal final_response
-            if finished_response.request.resource_type == "document" and finished_response.request.is_navigation_request():
+            if (
+                finished_response.request.resource_type == "document"
+                and finished_response.request.is_navigation_request()
+            ):
                 final_response = finished_response
 
         async with AsyncCamoufox(
-                geoip=self.geoip,
-                proxy=self.proxy,
-                disable_coop=True,
-                enable_cache=True,
-                addons=self.addons,
-                exclude_addons=addons,
-                headless=self.headless,
-                humanize=self.humanize,
-                i_know_what_im_doing=True,  # To turn warnings off with the user configurations
-                allow_webgl=self.allow_webgl,
-                block_webrtc=self.block_webrtc,
-                block_images=self.block_images,  # Careful! it makes some websites doesn't finish loading at all like stackoverflow even in headful
-                os=None if self.os_randomize else get_os_name(),
+            geoip=self.geoip,
+            proxy=self.proxy,
+            disable_coop=True,
+            enable_cache=True,
+            addons=self.addons,
+            exclude_addons=addons,
+            headless=self.headless,
+            humanize=self.humanize,
+            i_know_what_im_doing=True,  # To turn warnings off with the user configurations
+            allow_webgl=self.allow_webgl,
+            block_webrtc=self.block_webrtc,
+            block_images=self.block_images,  # Careful! it makes some websites doesn't finish loading at all like stackoverflow even in headful
+            os=None if self.os_randomize else get_os_name(),
         ) as browser:
             page = await browser.new_page()
             page.set_default_navigation_timeout(self.timeout)
@@ -199,10 +248,15 @@ class CamoufoxEngine:
             if self.extra_headers:
                 await page.set_extra_http_headers(self.extra_headers)
 
-            first_response = await page.goto(url, referer=generate_convincing_referer(url) if self.google_search else None)
+            first_response = await page.goto(
+                url,
+                referer=(
+                    generate_convincing_referer(url) if self.google_search else None
+                ),
+            )
             await page.wait_for_load_state(state="domcontentloaded")
             if self.network_idle:
-                await page.wait_for_load_state('networkidle')
+                await page.wait_for_load_state("networkidle")
 
             if self.page_action is not None:
                 page = await self.page_action(page)
@@ -214,23 +268,30 @@ class CamoufoxEngine:
                 await page.wait_for_load_state(state="load")
                 await page.wait_for_load_state(state="domcontentloaded")
                 if self.network_idle:
-                    await page.wait_for_load_state('networkidle')
+                    await page.wait_for_load_state("networkidle")
 
             # In case we didn't catch a document type somehow
             final_response = final_response if final_response else first_response
             # This will be parsed inside `Response`
-            encoding = final_response.headers.get('content-type', '') or 'utf-8'  # default encoding
+            encoding = (
+                final_response.headers.get("content-type", "") or "utf-8"
+            )  # default encoding
             # PlayWright API sometimes give empty status text for some reason!
-            status_text = final_response.status_text or StatusText.get(final_response.status)
+            status_text = final_response.status_text or StatusText.get(
+                final_response.status
+            )
 
             response = Response(
                 url=page.url,
                 text=await page.content(),
-                body=(await page.content()).encode('utf-8'),
+                body=(await page.content()).encode("utf-8"),
                 status=final_response.status,
                 reason=status_text,
                 encoding=encoding,
-                cookies={cookie['name']: cookie['value'] for cookie in await page.context.cookies()},
+                cookies={
+                    cookie["name"]: cookie["value"]
+                    for cookie in await page.context.cookies()
+                },
                 headers=await first_response.all_headers(),
                 request_headers=await first_response.request.all_headers(),
                 **self.adaptor_arguments
