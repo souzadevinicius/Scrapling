@@ -1,7 +1,18 @@
-from scrapling.core._types import (Callable, Dict, List, Literal, Optional,
-                                   SelectorWaitStates, Union)
-from scrapling.engines import (CamoufoxEngine, PlaywrightEngine, StaticEngine,
-                               check_if_engine_usable)
+from scrapling.core._types import (
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    SelectorWaitStates,
+    Union,
+)
+from scrapling.engines import (
+    CamoufoxEngine,
+    PlaywrightEngine,
+    StaticEngine,
+    check_if_engine_usable,
+)
 from scrapling.engines.toolbelt import BaseFetcher, Response
 
 
@@ -10,9 +21,17 @@ class Fetcher(BaseFetcher):
 
     Any additional keyword arguments passed to the methods below are passed to the respective httpx's method directly.
     """
+
     def get(
-            self, url: str, follow_redirects: bool = True, timeout: Optional[Union[int, float]] = 10, stealthy_headers: Optional[bool] = True,
-            proxy: Optional[str] = None, retries: Optional[int] = 3, **kwargs: Dict) -> Response:
+        self,
+        url: str,
+        follow_redirects: bool = True,
+        timeout: Optional[Union[int, float]] = 10,
+        stealthy_headers: Optional[bool] = True,
+        proxy: Optional[str] = None,
+        retries: Optional[int] = 3,
+        **kwargs: Dict
+    ) -> Response:
         """Make basic HTTP GET request for you but with some added flavors.
 
         :param url: Target url.
@@ -26,12 +45,27 @@ class Fetcher(BaseFetcher):
         :return: A `Response` object that is the same as `Adaptor` object except it has these added attributes: `status`, `reason`, `cookies`, `headers`, and `request_headers`
         """
         adaptor_arguments = tuple(self.adaptor_arguments.items())
-        response_object = StaticEngine(url, proxy, stealthy_headers, follow_redirects, timeout, retries, adaptor_arguments=adaptor_arguments).get(**kwargs)
+        response_object = StaticEngine(
+            url,
+            proxy,
+            stealthy_headers,
+            follow_redirects,
+            timeout,
+            retries,
+            adaptor_arguments=adaptor_arguments,
+        ).get(**kwargs)
         return response_object
 
     def post(
-            self, url: str, follow_redirects: bool = True, timeout: Optional[Union[int, float]] = 10, stealthy_headers: Optional[bool] = True,
-            proxy: Optional[str] = None, retries: Optional[int] = 3, **kwargs: Dict) -> Response:
+        self,
+        url: str,
+        follow_redirects: bool = True,
+        timeout: Optional[Union[int, float]] = 10,
+        stealthy_headers: Optional[bool] = True,
+        proxy: Optional[str] = None,
+        retries: Optional[int] = 3,
+        **kwargs: Dict
+    ) -> Response:
         """Make basic HTTP POST request for you but with some added flavors.
 
         :param url: Target url.
@@ -45,12 +79,27 @@ class Fetcher(BaseFetcher):
         :return: A `Response` object that is the same as `Adaptor` object except it has these added attributes: `status`, `reason`, `cookies`, `headers`, and `request_headers`
         """
         adaptor_arguments = tuple(self.adaptor_arguments.items())
-        response_object = StaticEngine(url, proxy, stealthy_headers, follow_redirects, timeout, retries, adaptor_arguments=adaptor_arguments).post(**kwargs)
+        response_object = StaticEngine(
+            url,
+            proxy,
+            stealthy_headers,
+            follow_redirects,
+            timeout,
+            retries,
+            adaptor_arguments=adaptor_arguments,
+        ).post(**kwargs)
         return response_object
 
     def put(
-            self, url: str, follow_redirects: bool = True, timeout: Optional[Union[int, float]] = 10, stealthy_headers: Optional[bool] = True,
-            proxy: Optional[str] = None, retries: Optional[int] = 3, **kwargs: Dict) -> Response:
+        self,
+        url: str,
+        follow_redirects: bool = True,
+        timeout: Optional[Union[int, float]] = 10,
+        stealthy_headers: Optional[bool] = True,
+        proxy: Optional[str] = None,
+        retries: Optional[int] = 3,
+        **kwargs: Dict
+    ) -> Response:
         """Make basic HTTP PUT request for you but with some added flavors.
 
         :param url: Target url
@@ -65,12 +114,27 @@ class Fetcher(BaseFetcher):
         :return: A `Response` object that is the same as `Adaptor` object except it has these added attributes: `status`, `reason`, `cookies`, `headers`, and `request_headers`
         """
         adaptor_arguments = tuple(self.adaptor_arguments.items())
-        response_object = StaticEngine(url, proxy, stealthy_headers, follow_redirects, timeout, retries, adaptor_arguments=adaptor_arguments).put(**kwargs)
+        response_object = StaticEngine(
+            url,
+            proxy,
+            stealthy_headers,
+            follow_redirects,
+            timeout,
+            retries,
+            adaptor_arguments=adaptor_arguments,
+        ).put(**kwargs)
         return response_object
 
     def delete(
-            self, url: str, follow_redirects: bool = True, timeout: Optional[Union[int, float]] = 10, stealthy_headers: Optional[bool] = True,
-            proxy: Optional[str] = None, retries: Optional[int] = 3, **kwargs: Dict) -> Response:
+        self,
+        url: str,
+        follow_redirects: bool = True,
+        timeout: Optional[Union[int, float]] = 10,
+        stealthy_headers: Optional[bool] = True,
+        proxy: Optional[str] = None,
+        retries: Optional[int] = 3,
+        **kwargs: Dict
+    ) -> Response:
         """Make basic HTTP DELETE request for you but with some added flavors.
 
         :param url: Target url
@@ -84,14 +148,29 @@ class Fetcher(BaseFetcher):
         :return: A `Response` object that is the same as `Adaptor` object except it has these added attributes: `status`, `reason`, `cookies`, `headers`, and `request_headers`
         """
         adaptor_arguments = tuple(self.adaptor_arguments.items())
-        response_object = StaticEngine(url, proxy, stealthy_headers, follow_redirects, timeout, retries, adaptor_arguments=adaptor_arguments).delete(**kwargs)
+        response_object = StaticEngine(
+            url,
+            proxy,
+            stealthy_headers,
+            follow_redirects,
+            timeout,
+            retries,
+            adaptor_arguments=adaptor_arguments,
+        ).delete(**kwargs)
         return response_object
 
 
 class AsyncFetcher(Fetcher):
     async def get(
-            self, url: str, follow_redirects: bool = True, timeout: Optional[Union[int, float]] = 10, stealthy_headers: Optional[bool] = True,
-            proxy: Optional[str] = None, retries: Optional[int] = 3, **kwargs: Dict) -> Response:
+        self,
+        url: str,
+        follow_redirects: bool = True,
+        timeout: Optional[Union[int, float]] = 10,
+        stealthy_headers: Optional[bool] = True,
+        proxy: Optional[str] = None,
+        retries: Optional[int] = 3,
+        **kwargs: Dict
+    ) -> Response:
         """Make basic HTTP GET request for you but with some added flavors.
 
         :param url: Target url.
@@ -105,12 +184,27 @@ class AsyncFetcher(Fetcher):
         :return: A `Response` object that is the same as `Adaptor` object except it has these added attributes: `status`, `reason`, `cookies`, `headers`, and `request_headers`
         """
         adaptor_arguments = tuple(self.adaptor_arguments.items())
-        response_object = await StaticEngine(url, proxy, stealthy_headers, follow_redirects, timeout, retries=retries, adaptor_arguments=adaptor_arguments).async_get(**kwargs)
+        response_object = await StaticEngine(
+            url,
+            proxy,
+            stealthy_headers,
+            follow_redirects,
+            timeout,
+            retries=retries,
+            adaptor_arguments=adaptor_arguments,
+        ).async_get(**kwargs)
         return response_object
 
     async def post(
-            self, url: str, follow_redirects: bool = True, timeout: Optional[Union[int, float]] = 10, stealthy_headers: Optional[bool] = True,
-            proxy: Optional[str] = None, retries: Optional[int] = 3, **kwargs: Dict) -> Response:
+        self,
+        url: str,
+        follow_redirects: bool = True,
+        timeout: Optional[Union[int, float]] = 10,
+        stealthy_headers: Optional[bool] = True,
+        proxy: Optional[str] = None,
+        retries: Optional[int] = 3,
+        **kwargs: Dict
+    ) -> Response:
         """Make basic HTTP POST request for you but with some added flavors.
 
         :param url: Target url.
@@ -124,12 +218,27 @@ class AsyncFetcher(Fetcher):
         :return: A `Response` object that is the same as `Adaptor` object except it has these added attributes: `status`, `reason`, `cookies`, `headers`, and `request_headers`
         """
         adaptor_arguments = tuple(self.adaptor_arguments.items())
-        response_object = await StaticEngine(url, proxy, stealthy_headers, follow_redirects, timeout, retries=retries, adaptor_arguments=adaptor_arguments).async_post(**kwargs)
+        response_object = await StaticEngine(
+            url,
+            proxy,
+            stealthy_headers,
+            follow_redirects,
+            timeout,
+            retries=retries,
+            adaptor_arguments=adaptor_arguments,
+        ).async_post(**kwargs)
         return response_object
 
     async def put(
-            self, url: str, follow_redirects: bool = True, timeout: Optional[Union[int, float]] = 10, stealthy_headers: Optional[bool] = True,
-            proxy: Optional[str] = None, retries: Optional[int] = 3, **kwargs: Dict) -> Response:
+        self,
+        url: str,
+        follow_redirects: bool = True,
+        timeout: Optional[Union[int, float]] = 10,
+        stealthy_headers: Optional[bool] = True,
+        proxy: Optional[str] = None,
+        retries: Optional[int] = 3,
+        **kwargs: Dict
+    ) -> Response:
         """Make basic HTTP PUT request for you but with some added flavors.
 
         :param url: Target url
@@ -143,12 +252,27 @@ class AsyncFetcher(Fetcher):
         :return: A `Response` object that is the same as `Adaptor` object except it has these added attributes: `status`, `reason`, `cookies`, `headers`, and `request_headers`
         """
         adaptor_arguments = tuple(self.adaptor_arguments.items())
-        response_object = await StaticEngine(url, proxy, stealthy_headers, follow_redirects, timeout, retries=retries, adaptor_arguments=adaptor_arguments).async_put(**kwargs)
+        response_object = await StaticEngine(
+            url,
+            proxy,
+            stealthy_headers,
+            follow_redirects,
+            timeout,
+            retries=retries,
+            adaptor_arguments=adaptor_arguments,
+        ).async_put(**kwargs)
         return response_object
 
     async def delete(
-            self, url: str, follow_redirects: bool = True, timeout: Optional[Union[int, float]] = 10, stealthy_headers: Optional[bool] = True,
-            proxy: Optional[str] = None, retries: Optional[int] = 3, **kwargs: Dict) -> Response:
+        self,
+        url: str,
+        follow_redirects: bool = True,
+        timeout: Optional[Union[int, float]] = 10,
+        stealthy_headers: Optional[bool] = True,
+        proxy: Optional[str] = None,
+        retries: Optional[int] = 3,
+        **kwargs: Dict
+    ) -> Response:
         """Make basic HTTP DELETE request for you but with some added flavors.
 
         :param url: Target url
@@ -162,22 +286,48 @@ class AsyncFetcher(Fetcher):
         :return: A `Response` object that is the same as `Adaptor` object except it has these added attributes: `status`, `reason`, `cookies`, `headers`, and `request_headers`
         """
         adaptor_arguments = tuple(self.adaptor_arguments.items())
-        response_object = await StaticEngine(url, proxy, stealthy_headers, follow_redirects, timeout, retries=retries, adaptor_arguments=adaptor_arguments).async_delete(**kwargs)
+        response_object = await StaticEngine(
+            url,
+            proxy,
+            stealthy_headers,
+            follow_redirects,
+            timeout,
+            retries=retries,
+            adaptor_arguments=adaptor_arguments,
+        ).async_delete(**kwargs)
         return response_object
 
 
 class StealthyFetcher(BaseFetcher):
     """A `Fetcher` class type that is completely stealthy fetcher that uses a modified version of Firefox.
 
-     It works as real browsers passing almost all online tests/protections based on Camoufox.
-     Other added flavors include setting the faked OS fingerprints to match the user's OS and the referer of every request is set as if this request came from Google's search of this URL's domain.
+    It works as real browsers passing almost all online tests/protections based on Camoufox.
+    Other added flavors include setting the faked OS fingerprints to match the user's OS and the referer of every request is set as if this request came from Google's search of this URL's domain.
     """
+
     def fetch(
-            self, url: str, headless: Optional[Union[bool, Literal['virtual']]] = True, block_images: Optional[bool] = False, disable_resources: Optional[bool] = False,
-            block_webrtc: Optional[bool] = False, allow_webgl: Optional[bool] = True, network_idle: Optional[bool] = False, addons: Optional[List[str]] = None,
-            timeout: Optional[float] = 30000, page_action: Callable = None, wait_selector: Optional[str] = None, humanize: Optional[Union[bool, float]] = True,
-            wait_selector_state: SelectorWaitStates = 'attached', google_search: Optional[bool] = True, extra_headers: Optional[Dict[str, str]] = None,
-            proxy: Optional[Union[str, Dict[str, str]]] = None, os_randomize: Optional[bool] = None, disable_ads: Optional[bool] = False, geoip: Optional[bool] = False,
+        self,
+        url: str,
+        headless: Optional[Union[bool, Literal["virtual"]]] = True,
+        block_images: Optional[bool] = False,
+        disable_resources: Optional[bool] = False,
+        block_webrtc: Optional[bool] = False,
+        allow_webgl: Optional[bool] = True,
+        network_idle: Optional[bool] = False,
+        addons: Optional[List[str]] = None,
+        timeout: Optional[float] = 30000,
+        page_action: Callable = None,
+        wait_selector: Optional[str] = None,
+        humanize: Optional[Union[bool, float]] = True,
+        wait_selector_state: SelectorWaitStates = "attached",
+        google_search: Optional[bool] = True,
+        extra_headers: Optional[Dict[str, str]] = None,
+        proxy: Optional[Union[str, Dict[str, str]]] = None,
+        os_randomize: Optional[bool] = None,
+        disable_ads: Optional[bool] = False,
+        geoip: Optional[bool] = False,
+        response_handler: Callable = None,
+        initial_behaviour: Optional[Callable] = None,
     ) -> Response:
         """
         Opens up a browser and do your request based on your chosen options below.
@@ -226,16 +376,34 @@ class StealthyFetcher(BaseFetcher):
             extra_headers=extra_headers,
             disable_resources=disable_resources,
             wait_selector_state=wait_selector_state,
+            response_handler=response_handler,
             adaptor_arguments=self.adaptor_arguments,
         )
         return engine.fetch(url)
 
     async def async_fetch(
-            self, url: str, headless: Optional[Union[bool, Literal['virtual']]] = True, block_images: Optional[bool] = False, disable_resources: Optional[bool] = False,
-            block_webrtc: Optional[bool] = False, allow_webgl: Optional[bool] = True, network_idle: Optional[bool] = False, addons: Optional[List[str]] = None,
-            timeout: Optional[float] = 30000, page_action: Callable = None, wait_selector: Optional[str] = None, humanize: Optional[Union[bool, float]] = True,
-            wait_selector_state: SelectorWaitStates = 'attached', google_search: Optional[bool] = True, extra_headers: Optional[Dict[str, str]] = None,
-            proxy: Optional[Union[str, Dict[str, str]]] = None, os_randomize: Optional[bool] = None, disable_ads: Optional[bool] = False, geoip: Optional[bool] = False,
+        self,
+        url: str,
+        headless: Optional[Union[bool, Literal["virtual"]]] = True,
+        block_images: Optional[bool] = False,
+        disable_resources: Optional[bool] = False,
+        block_webrtc: Optional[bool] = False,
+        allow_webgl: Optional[bool] = True,
+        network_idle: Optional[bool] = False,
+        addons: Optional[List[str]] = None,
+        timeout: Optional[float] = 30000,
+        page_action: Callable = None,
+        wait_selector: Optional[str] = None,
+        humanize: Optional[Union[bool, float]] = True,
+        wait_selector_state: SelectorWaitStates = "attached",
+        google_search: Optional[bool] = True,
+        extra_headers: Optional[Dict[str, str]] = None,
+        proxy: Optional[Union[str, Dict[str, str]]] = None,
+        os_randomize: Optional[bool] = None,
+        disable_ads: Optional[bool] = False,
+        geoip: Optional[bool] = False,
+        response_handler: Callable = None,
+        initial_behaviour: Callable = None,
     ) -> Response:
         """
         Opens up a browser and do your request based on your chosen options below.
@@ -284,6 +452,7 @@ class StealthyFetcher(BaseFetcher):
             extra_headers=extra_headers,
             disable_resources=disable_resources,
             wait_selector_state=wait_selector_state,
+            response_handler=response_handler,
             adaptor_arguments=self.adaptor_arguments,
         )
         return await engine.async_fetch(url)
@@ -305,15 +474,31 @@ class PlayWrightFetcher(BaseFetcher):
 
     > Note that these are the main options with PlayWright but it can be mixed together.
     """
+
     def fetch(
-            self, url: str, headless: Union[bool, str] = True, disable_resources: bool = None,
-            useragent: Optional[str] = None, network_idle: Optional[bool] = False, timeout: Optional[float] = 30000,
-            page_action: Optional[Callable] = None, wait_selector: Optional[str] = None, wait_selector_state: SelectorWaitStates = 'attached',
-            hide_canvas: Optional[bool] = False, disable_webgl: Optional[bool] = False, extra_headers: Optional[Dict[str, str]] = None, google_search: Optional[bool] = True,
-            proxy: Optional[Union[str, Dict[str, str]]] = None, locale: Optional[str] = 'en-US',
-            stealth: Optional[bool] = False, real_chrome: Optional[bool] = False,
-            cdp_url: Optional[str] = None,
-            nstbrowser_mode: Optional[bool] = False, nstbrowser_config: Optional[Dict] = None,
+        self,
+        url: str,
+        headless: Union[bool, str] = True,
+        disable_resources: bool = None,
+        useragent: Optional[str] = None,
+        network_idle: Optional[bool] = False,
+        timeout: Optional[float] = 30000,
+        page_action: Optional[Callable] = None,
+        wait_selector: Optional[str] = None,
+        wait_selector_state: SelectorWaitStates = "attached",
+        hide_canvas: Optional[bool] = False,
+        disable_webgl: Optional[bool] = False,
+        extra_headers: Optional[Dict[str, str]] = None,
+        google_search: Optional[bool] = True,
+        proxy: Optional[Union[str, Dict[str, str]]] = None,
+        locale: Optional[str] = "en-US",
+        stealth: Optional[bool] = False,
+        real_chrome: Optional[bool] = False,
+        cdp_url: Optional[str] = None,
+        nstbrowser_mode: Optional[bool] = False,
+        nstbrowser_config: Optional[Dict] = None,
+        initial_behaviour: Callable = None,
+        response_handler: Callable = None,
     ) -> Response:
         """Opens up a browser and do your request based on your chosen options below.
 
@@ -361,19 +546,36 @@ class PlayWrightFetcher(BaseFetcher):
             nstbrowser_config=nstbrowser_config,
             disable_resources=disable_resources,
             wait_selector_state=wait_selector_state,
+            response_handler=response_handler,
+            initial_behaviour=initial_behaviour,
             adaptor_arguments=self.adaptor_arguments,
         )
         return engine.fetch(url)
 
     async def async_fetch(
-            self, url: str, headless: Union[bool, str] = True, disable_resources: bool = None,
-            useragent: Optional[str] = None, network_idle: Optional[bool] = False, timeout: Optional[float] = 30000,
-            page_action: Optional[Callable] = None, wait_selector: Optional[str] = None, wait_selector_state: SelectorWaitStates = 'attached',
-            hide_canvas: Optional[bool] = False, disable_webgl: Optional[bool] = False, extra_headers: Optional[Dict[str, str]] = None, google_search: Optional[bool] = True,
-            proxy: Optional[Union[str, Dict[str, str]]] = None, locale: Optional[str] = 'en-US',
-            stealth: Optional[bool] = False, real_chrome: Optional[bool] = False,
-            cdp_url: Optional[str] = None,
-            nstbrowser_mode: Optional[bool] = False, nstbrowser_config: Optional[Dict] = None,
+        self,
+        url: str,
+        headless: Union[bool, str] = True,
+        disable_resources: bool = None,
+        useragent: Optional[str] = None,
+        network_idle: Optional[bool] = False,
+        timeout: Optional[float] = 30000,
+        page_action: Optional[Callable] = None,
+        wait_selector: Optional[str] = None,
+        wait_selector_state: SelectorWaitStates = "attached",
+        hide_canvas: Optional[bool] = False,
+        disable_webgl: Optional[bool] = False,
+        extra_headers: Optional[Dict[str, str]] = None,
+        google_search: Optional[bool] = True,
+        proxy: Optional[Union[str, Dict[str, str]]] = None,
+        locale: Optional[str] = "en-US",
+        stealth: Optional[bool] = False,
+        real_chrome: Optional[bool] = False,
+        cdp_url: Optional[str] = None,
+        nstbrowser_mode: Optional[bool] = False,
+        nstbrowser_config: Optional[Dict] = None,
+        response_handler: Callable = None,
+        initial_behaviour: Callable = None,
     ) -> Response:
         """Opens up a browser and do your request based on your chosen options below.
 
@@ -421,6 +623,8 @@ class PlayWrightFetcher(BaseFetcher):
             nstbrowser_config=nstbrowser_config,
             disable_resources=disable_resources,
             wait_selector_state=wait_selector_state,
+            response_handler=response_handler,
+            initial_behaviour=initial_behaviour,
             adaptor_arguments=self.adaptor_arguments,
         )
         return await engine.async_fetch(url)
@@ -428,5 +632,7 @@ class PlayWrightFetcher(BaseFetcher):
 
 class CustomFetcher(BaseFetcher):
     def fetch(self, url: str, browser_engine, **kwargs) -> Response:
-        engine = check_if_engine_usable(browser_engine)(adaptor_arguments=self.adaptor_arguments, **kwargs)
+        engine = check_if_engine_usable(browser_engine)(
+            adaptor_arguments=self.adaptor_arguments, **kwargs
+        )
         return engine.fetch(url)

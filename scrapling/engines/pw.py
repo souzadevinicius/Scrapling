@@ -1,41 +1,47 @@
 import json
 
-from scrapling.core._types import (Callable, Dict, Optional,
-                                   SelectorWaitStates, Union)
+from scrapling.core._types import Callable, Dict, Optional, SelectorWaitStates, Union
 from scrapling.core.utils import log, lru_cache
-from scrapling.engines.constants import (DEFAULT_STEALTH_FLAGS,
-                                         NSTBROWSER_DEFAULT_QUERY)
-from scrapling.engines.toolbelt import (Response, StatusText,
-                                        async_intercept_route,
-                                        check_type_validity, construct_cdp_url,
-                                        construct_proxy_dict,
-                                        generate_convincing_referer,
-                                        generate_headers, intercept_route,
-                                        js_bypass_path)
+from scrapling.engines.constants import DEFAULT_STEALTH_FLAGS, NSTBROWSER_DEFAULT_QUERY
+from scrapling.engines.toolbelt import (
+    Response,
+    StatusText,
+    async_intercept_route,
+    check_type_validity,
+    construct_cdp_url,
+    construct_proxy_dict,
+    generate_convincing_referer,
+    generate_headers,
+    intercept_route,
+    js_bypass_path,
+)
 
 
 class PlaywrightEngine:
     def __init__(
-            self, headless: Union[bool, str] = True,
-            disable_resources: bool = False,
-            useragent: Optional[str] = None,
-            network_idle: Optional[bool] = False,
-            timeout: Optional[float] = 30000,
-            page_action: Callable = None,
-            wait_selector: Optional[str] = None,
-            locale: Optional[str] = 'en-US',
-            wait_selector_state: SelectorWaitStates = 'attached',
-            stealth: Optional[bool] = False,
-            real_chrome: Optional[bool] = False,
-            hide_canvas: Optional[bool] = False,
-            disable_webgl: Optional[bool] = False,
-            cdp_url: Optional[str] = None,
-            nstbrowser_mode: Optional[bool] = False,
-            nstbrowser_config: Optional[Dict] = None,
-            google_search: Optional[bool] = True,
-            extra_headers: Optional[Dict[str, str]] = None,
-            proxy: Optional[Union[str, Dict[str, str]]] = None,
-            adaptor_arguments: Dict = None
+        self,
+        headless: Union[bool, str] = True,
+        disable_resources: bool = False,
+        useragent: Optional[str] = None,
+        network_idle: Optional[bool] = False,
+        timeout: Optional[float] = 30000,
+        page_action: Callable = None,
+        wait_selector: Optional[str] = None,
+        locale: Optional[str] = "en-US",
+        wait_selector_state: SelectorWaitStates = "attached",
+        stealth: Optional[bool] = False,
+        real_chrome: Optional[bool] = False,
+        hide_canvas: Optional[bool] = False,
+        disable_webgl: Optional[bool] = False,
+        cdp_url: Optional[str] = None,
+        nstbrowser_mode: Optional[bool] = False,
+        nstbrowser_config: Optional[Dict] = None,
+        google_search: Optional[bool] = True,
+        extra_headers: Optional[Dict[str, str]] = None,
+        proxy: Optional[Union[str, Dict[str, str]]] = None,
+        response_handler: Optional[Callable] = None,
+        initial_behaviour: Optional[Callable] = None,
+        adaptor_arguments: Dict = None,
     ):
         """An engine that utilizes PlayWright library, check the `PlayWrightFetcher` class for more documentation.
 
@@ -63,7 +69,7 @@ class PlaywrightEngine:
         :param adaptor_arguments: The arguments that will be passed in the end while creating the final Adaptor's class.
         """
         self.headless = headless
-        self.locale = check_type_validity(locale, [str], 'en-US', param_name='locale')
+        self.locale = check_type_validity(locale, [str], "en-US", param_name="locale")
         self.disable_resources = disable_resources
         self.network_idle = bool(network_idle)
         self.stealth = bool(stealth)
@@ -76,6 +82,8 @@ class PlaywrightEngine:
         self.cdp_url = cdp_url
         self.useragent = useragent
         self.timeout = check_type_validity(timeout, [int, float], 30000)
+        self.response_handler = response_handler
+        self.initial_behaviour = initial_behaviour
         if page_action is not None:
             if callable(page_action):
                 self.page_action = page_action
@@ -92,8 +100,8 @@ class PlaywrightEngine:
         self.adaptor_arguments = adaptor_arguments if adaptor_arguments else {}
         self.harmful_default_args = [
             # This will be ignored to avoid detection more and possibly avoid the popup crashing bug abuse: https://issues.chromium.org/issues/340836884
-            '--enable-automation',
-            '--disable-popup-blocking',
+            "--enable-automation",
+            "--disable-popup-blocking",
             # '--disable-component-update',
             # '--disable-default-apps',
             # '--disable-extensions',
@@ -111,12 +119,16 @@ class PlaywrightEngine:
                 query = NSTBROWSER_DEFAULT_QUERY.copy()
                 if self.stealth:
                     flags = self.__set_flags()
-                    query.update({
-                        "args": dict(zip(flags, [''] * len(flags))),  # browser args should be a dictionary
-                    })
+                    query.update(
+                        {
+                            "args": dict(
+                                zip(flags, [""] * len(flags))
+                            ),  # browser args should be a dictionary
+                        }
+                    )
 
                 config = {
-                    'config': json.dumps(query),
+                    "config": json.dumps(query),
                     # 'token': ''
                 }
             cdp_url = construct_cdp_url(cdp_url, config)
@@ -131,17 +143,25 @@ class PlaywrightEngine:
         """Returns the flags that will be used while launching the browser if stealth mode is enabled"""
         flags = DEFAULT_STEALTH_FLAGS
         if self.hide_canvas:
-            flags += ('--fingerprinting-canvas-image-data-noise',)
+            flags += ("--fingerprinting-canvas-image-data-noise",)
         if self.disable_webgl:
-            flags += ('--disable-webgl', '--disable-webgl-image-chromium', '--disable-webgl2',)
+            flags += (
+                "--disable-webgl",
+                "--disable-webgl-image-chromium",
+                "--disable-webgl2",
+            )
 
         return flags
 
     def __launch_kwargs(self):
         """Creates the arguments we will use while launching playwright's browser"""
-        launch_kwargs = {'headless': self.headless, 'ignore_default_args': self.harmful_default_args, 'channel': 'chrome' if self.real_chrome else 'chromium'}
+        launch_kwargs = {
+            "headless": self.headless,
+            "ignore_default_args": self.harmful_default_args,
+            "channel": "chrome" if self.real_chrome else "chromium",
+        }
         if self.stealth:
-            launch_kwargs.update({'args': self.__set_flags(), 'chromium_sandbox': True})
+            launch_kwargs.update({"args": self.__set_flags(), "chromium_sandbox": True})
 
         return launch_kwargs
 
@@ -150,22 +170,28 @@ class PlaywrightEngine:
         context_kwargs = {
             "proxy": self.proxy,
             "locale": self.locale,
-            "color_scheme": 'dark',  # Bypasses the 'prefersLightColor' check in creepjs
+            "color_scheme": "dark",  # Bypasses the 'prefersLightColor' check in creepjs
             "device_scale_factor": 2,
             "extra_http_headers": self.extra_headers if self.extra_headers else {},
-            "user_agent": self.useragent if self.useragent else generate_headers(browser_mode=True).get('User-Agent'),
+            "user_agent": (
+                self.useragent
+                if self.useragent
+                else generate_headers(browser_mode=True).get("User-Agent")
+            ),
         }
         if self.stealth:
-            context_kwargs.update({
-                'is_mobile': False,
-                'has_touch': False,
-                # I'm thinking about disabling it to rest from all Service Workers headache but let's keep it as it is for now
-                'service_workers': 'allow',
-                'ignore_https_errors': True,
-                'screen': {'width': 1920, 'height': 1080},
-                'viewport': {'width': 1920, 'height': 1080},
-                'permissions': ['geolocation', 'notifications']
-            })
+            context_kwargs.update(
+                {
+                    "is_mobile": False,
+                    "has_touch": False,
+                    # I'm thinking about disabling it to rest from all Service Workers headache but let's keep it as it is for now
+                    "service_workers": "allow",
+                    "ignore_https_errors": True,
+                    "screen": {"width": 1920, "height": 1080},
+                    "viewport": {"width": 1920, "height": 1080},
+                    "permissions": ["geolocation", "notifications"],
+                }
+            )
 
         return context_kwargs
 
@@ -181,10 +207,16 @@ class PlaywrightEngine:
         # https://arh.antoinevastel.com/bots/areyouheadless/
         # https://prescience-data.github.io/execution-monitor.html
         return tuple(
-            js_bypass_path(script) for script in (
+            js_bypass_path(script)
+            for script in (
                 # Order is important
-                'webdriver_fully.js', 'window_chrome.js', 'navigator_plugins.js', 'pdf_viewer.js',
-                'notification_permission.js', 'screen_props.js', 'playwright_fingerprint.js'
+                "webdriver_fully.js",
+                "window_chrome.js",
+                "navigator_plugins.js",
+                "pdf_viewer.js",
+                "notification_permission.js",
+                "screen_props.js",
+                "playwright_fingerprint.js",
             )
         )
 
@@ -195,6 +227,7 @@ class PlaywrightEngine:
         :return: A `Response` object that is the same as `Adaptor` object except it has these added attributes: `status`, `reason`, `cookies`, `headers`, and `request_headers`
         """
         from playwright.sync_api import Response as PlaywrightResponse
+
         if not self.stealth or self.real_chrome:
             # Because rebrowser_playwright doesn't play well with real browsers
             from playwright.sync_api import sync_playwright
@@ -206,7 +239,10 @@ class PlaywrightEngine:
 
         def handle_response(finished_response: PlaywrightResponse):
             nonlocal final_response
-            if finished_response.request.resource_type == "document" and finished_response.request.is_navigation_request():
+            if (
+                finished_response.request.resource_type == "document"
+                and finished_response.request.is_navigation_request()
+            ):
                 final_response = finished_response
 
         with sync_playwright() as p:
@@ -223,7 +259,9 @@ class PlaywrightEngine:
             page.set_default_navigation_timeout(self.timeout)
             page.set_default_timeout(self.timeout)
             # Listen for all responses
-            page.on("response", handle_response)
+
+            if self.response_handler:
+                page.on("response", self.response_handler)
 
             if self.extra_headers:
                 page.set_extra_http_headers(self.extra_headers)
@@ -235,10 +273,15 @@ class PlaywrightEngine:
                 for script in self.__stealth_scripts():
                     page.add_init_script(path=script)
 
-            first_response = page.goto(url, referer=generate_convincing_referer(url) if self.google_search else None)
+            first_response = page.goto(
+                url,
+                referer=(
+                    generate_convincing_referer(url) if self.google_search else None
+                ),
+            )
             page.wait_for_load_state(state="domcontentloaded")
             if self.network_idle:
-                page.wait_for_load_state('networkidle')
+                page.wait_for_load_state("networkidle")
 
             if self.page_action is not None:
                 page = self.page_action(page)
@@ -250,14 +293,21 @@ class PlaywrightEngine:
                 page.wait_for_load_state(state="load")
                 page.wait_for_load_state(state="domcontentloaded")
                 if self.network_idle:
-                    page.wait_for_load_state('networkidle')
+                    page.wait_for_load_state("networkidle")
 
             # In case we didn't catch a document type somehow
             final_response = final_response if final_response else first_response
             # This will be parsed inside `Response`
-            encoding = final_response.headers.get('content-type', '') or 'utf-8'  # default encoding
+            encoding = (
+                final_response.headers.get("content-type", "") or "utf-8"
+            )  # default encoding
             # PlayWright API sometimes give empty status text for some reason!
-            status_text = final_response.status_text or StatusText.get(final_response.status)
+            status_text = final_response.status_text or StatusText.get(
+                final_response.status
+            )
+
+            if self.initial_behaviour:
+                self.initial_behaviour(page)
 
             history = []
             current_request = first_response.request.redirected_from
@@ -282,11 +332,13 @@ class PlaywrightEngine:
             response = Response(
                 url=page.url,
                 text=page.content(),
-                body=page.content().encode('utf-8'),
+                body=page.content().encode("utf-8"),
                 status=final_response.status,
                 reason=status_text,
                 encoding=encoding,
-                cookies={cookie['name']: cookie['value'] for cookie in page.context.cookies()},
+                cookies={
+                    cookie["name"]: cookie["value"] for cookie in page.context.cookies()
+                },
                 headers=first_response.all_headers(),
                 request_headers=first_response.request.all_headers(),
                 history=history,
@@ -302,6 +354,7 @@ class PlaywrightEngine:
         :return: A `Response` object that is the same as `Adaptor` object except it has these added attributes: `status`, `reason`, `cookies`, `headers`, and `request_headers`
         """
         from playwright.async_api import Response as PlaywrightResponse
+
         if not self.stealth or self.real_chrome:
             # Because rebrowser_playwright doesn't play well with real browsers
             from playwright.async_api import async_playwright
@@ -313,7 +366,10 @@ class PlaywrightEngine:
 
         async def handle_response(finished_response: PlaywrightResponse):
             nonlocal final_response
-            if finished_response.request.resource_type == "document" and finished_response.request.is_navigation_request():
+            if (
+                finished_response.request.resource_type == "document"
+                and finished_response.request.is_navigation_request()
+            ):
                 final_response = finished_response
 
         async with async_playwright() as p:
@@ -342,10 +398,15 @@ class PlaywrightEngine:
                 for script in self.__stealth_scripts():
                     await page.add_init_script(path=script)
 
-            first_response = await page.goto(url, referer=generate_convincing_referer(url) if self.google_search else None)
+            first_response = await page.goto(
+                url,
+                referer=(
+                    generate_convincing_referer(url) if self.google_search else None
+                ),
+            )
             await page.wait_for_load_state(state="domcontentloaded")
             if self.network_idle:
-                await page.wait_for_load_state('networkidle')
+                await page.wait_for_load_state("networkidle")
 
             if self.page_action is not None:
                 page = await self.page_action(page)
@@ -357,14 +418,18 @@ class PlaywrightEngine:
                 await page.wait_for_load_state(state="load")
                 await page.wait_for_load_state(state="domcontentloaded")
                 if self.network_idle:
-                    await page.wait_for_load_state('networkidle')
+                    await page.wait_for_load_state("networkidle")
 
             # In case we didn't catch a document type somehow
             final_response = final_response if final_response else first_response
             # This will be parsed inside `Response`
-            encoding = final_response.headers.get('content-type', '') or 'utf-8'  # default encoding
+            encoding = (
+                final_response.headers.get("content-type", "") or "utf-8"
+            )  # default encoding
             # PlayWright API sometimes give empty status text for some reason!
-            status_text = final_response.status_text or StatusText.get(final_response.status)
+            status_text = final_response.status_text or StatusText.get(
+                final_response.status
+            )
 
             history = []
             current_request = first_response.request.redirected_from
@@ -389,11 +454,14 @@ class PlaywrightEngine:
             response = Response(
                 url=page.url,
                 text=await page.content(),
-                body=(await page.content()).encode('utf-8'),
+                body=(await page.content()).encode("utf-8"),
                 status=final_response.status,
                 reason=status_text,
                 encoding=encoding,
-                cookies={cookie['name']: cookie['value'] for cookie in await page.context.cookies()},
+                cookies={
+                    cookie["name"]: cookie["value"]
+                    for cookie in await page.context.cookies()
+                },
                 headers=await first_response.all_headers(),
                 request_headers=await first_response.request.all_headers(),
                 history=history,
