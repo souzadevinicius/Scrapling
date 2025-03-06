@@ -198,7 +198,6 @@ class CamoufoxEngine:
                 },
                 headers=first_response.all_headers(),
                 request_headers=first_response.request.all_headers(),
-                history=history,
                 **self.adaptor_arguments
             )
             page.close()
@@ -295,7 +294,6 @@ class CamoufoxEngine:
                 },
                 headers=await first_response.all_headers(),
                 request_headers=await first_response.request.all_headers(),
-                history=history,
                 **self.adaptor_arguments
             )
             await page.close()
