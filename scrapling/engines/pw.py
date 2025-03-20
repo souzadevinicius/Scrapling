@@ -23,25 +23,25 @@ class PlaywrightEngine:
         headless: Union[bool, str] = True,
         disable_resources: bool = False,
         useragent: Optional[str] = None,
-        network_idle: Optional[bool] = False,
+        network_idle: bool = False,
         timeout: Optional[float] = 30000,
         page_action: Callable = None,
         wait_selector: Optional[str] = None,
         locale: Optional[str] = "en-US",
         wait_selector_state: SelectorWaitStates = "attached",
-        stealth: Optional[bool] = False,
-        real_chrome: Optional[bool] = False,
-        hide_canvas: Optional[bool] = False,
-        disable_webgl: Optional[bool] = False,
+        stealth: bool = False,
+        real_chrome: bool = False,
+        hide_canvas: bool = False,
+        disable_webgl: bool = False,
         cdp_url: Optional[str] = None,
-        nstbrowser_mode: Optional[bool] = False,
+        nstbrowser_mode: bool = False,
         nstbrowser_config: Optional[Dict] = None,
-        google_search: Optional[bool] = True,
+        google_search: bool = True,
         extra_headers: Optional[Dict[str, str]] = None,
         proxy: Optional[Union[str, Dict[str, str]]] = None,
+        adaptor_arguments: Dict = None,
         response_handler: Optional[Callable] = None,
         initial_behaviour: Optional[Callable] = None,
-        adaptor_arguments: Dict = None,
     ):
         """An engine that utilizes PlayWright library, check the `PlayWrightFetcher` class for more documentation.
 
@@ -138,7 +138,7 @@ class PlaywrightEngine:
 
         return cdp_url
 
-    @lru_cache(typed=True)
+    @lru_cache(32, typed=True)
     def __set_flags(self):
         """Returns the flags that will be used while launching the browser if stealth mode is enabled"""
         flags = DEFAULT_STEALTH_FLAGS
@@ -195,7 +195,7 @@ class PlaywrightEngine:
 
         return context_kwargs
 
-    @lru_cache()
+    @lru_cache(1)
     def __stealth_scripts(self):
         # Basic bypasses nothing fancy as I'm still working on it
         # But with adding these bypasses to the above config, it bypasses many online tests like
@@ -220,6 +220,53 @@ class PlaywrightEngine:
             )
         )
 
+    def _process_response_history(self, first_response):
+        """Process response history to build a list of Response objects"""
+        history = []
+        current_request = first_response.request.redirected_from
+
+        try:
+            while current_request:
+                try:
+                    current_response = current_request.response()
+                    history.insert(
+                        0,
+                        Response(
+                            url=current_request.url,
+                            # using current_response.text() will trigger "Error: Response.text: Response body is unavailable for redirect responses"
+                            text="",
+                            body=b"",
+                            status=current_response.status if current_response else 301,
+                            reason=(
+                                (
+                                    current_response.status_text
+                                    or StatusText.get(current_response.status)
+                                )
+                                if current_response
+                                else StatusText.get(301)
+                            ),
+                            encoding=current_response.headers.get("content-type", "")
+                            or "utf-8",
+                            cookies={},
+                            headers=(
+                                current_response.all_headers()
+                                if current_response
+                                else {}
+                            ),
+                            request_headers=current_request.all_headers(),
+                            **self.adaptor_arguments,
+                        ),
+                    )
+                except Exception as e:
+                    log.error(f"Error processing redirect: {e}")
+                    break
+
+                current_request = current_request.redirected_from
+        except Exception as e:
+            log.error(f"Error processing response history: {e}")
+
+        return history
+
     def fetch(self, url: str) -> Response:
         """Opens up the browser and do your request based on your chosen options.
 
@@ -234,8 +281,8 @@ class PlaywrightEngine:
         else:
             from rebrowser_playwright.sync_api import sync_playwright
 
-        # Store the final response
         final_response = None
+        referer = generate_convincing_referer(url) if self.google_search else None
 
         def handle_response(finished_response: PlaywrightResponse):
             nonlocal final_response
@@ -254,7 +301,6 @@ class PlaywrightEngine:
                 browser = p.chromium.launch(**self.__launch_kwargs())
 
             context = browser.new_context(**self.__context_kwargs())
-            # Finally we are in business
             page = context.new_page()
             page.set_default_navigation_timeout(self.timeout)
             page.set_default_timeout(self.timeout)
@@ -262,6 +308,7 @@ class PlaywrightEngine:
 
             if self.response_handler:
                 page.on("response", self.response_handler)
+            page.on("response", handle_response)
 
             if self.extra_headers:
                 page.set_extra_http_headers(self.extra_headers)
@@ -273,30 +320,35 @@ class PlaywrightEngine:
                 for script in self.__stealth_scripts():
                     page.add_init_script(path=script)
 
-            first_response = page.goto(
-                url,
-                referer=(
-                    generate_convincing_referer(url) if self.google_search else None
-                ),
-            )
+            first_response = page.goto(url, referer=referer)
             page.wait_for_load_state(state="domcontentloaded")
+
             if self.network_idle:
                 page.wait_for_load_state("networkidle")
 
             if self.page_action is not None:
-                page = self.page_action(page)
+                try:
+                    page = self.page_action(page)
+                except Exception as e:
+                    log.error(f"Error executing page_action: {e}")
 
             if self.wait_selector and type(self.wait_selector) is str:
-                waiter = page.locator(self.wait_selector)
-                waiter.first.wait_for(state=self.wait_selector_state)
-                # Wait again after waiting for the selector, helpful with protections like Cloudflare
-                page.wait_for_load_state(state="load")
-                page.wait_for_load_state(state="domcontentloaded")
-                if self.network_idle:
-                    page.wait_for_load_state("networkidle")
+                try:
+                    waiter = page.locator(self.wait_selector)
+                    waiter.first.wait_for(state=self.wait_selector_state)
+                    # Wait again after waiting for the selector, helpful with protections like Cloudflare
+                    page.wait_for_load_state(state="load")
+                    page.wait_for_load_state(state="domcontentloaded")
+                    if self.network_idle:
+                        page.wait_for_load_state("networkidle")
+                except Exception as e:
+                    log.error(f"Error waiting for selector {self.wait_selector}: {e}")
 
             # In case we didn't catch a document type somehow
             final_response = final_response if final_response else first_response
+            if not final_response:
+                raise ValueError("Failed to get a response from the page")
+
             # This will be parsed inside `Response`
             encoding = (
                 final_response.headers.get("content-type", "") or "utf-8"
@@ -306,13 +358,17 @@ class PlaywrightEngine:
                 final_response.status
             )
 
-            if self.initial_behaviour:
-                self.initial_behaviour(page)
+            history = self._process_response_history(first_response)
+            try:
+                page_content = page.content()
+            except Exception as e:
+                log.error(f"Error getting page content: {e}")
+                page_content = ""
 
             response = Response(
                 url=page.url,
-                text=page.content(),
-                body=page.content().encode("utf-8"),
+                text=page_content,
+                body=page_content.encode("utf-8"),
                 status=final_response.status,
                 reason=status_text,
                 encoding=encoding,
@@ -321,9 +377,10 @@ class PlaywrightEngine:
                 },
                 headers=first_response.all_headers(),
                 request_headers=first_response.request.all_headers(),
-                **self.adaptor_arguments
+                **self.adaptor_arguments,
             )
             page.close()
+            context.close()
         return response
 
     async def async_fetch(self, url: str) -> Response:
@@ -340,8 +397,8 @@ class PlaywrightEngine:
         else:
             from rebrowser_playwright.async_api import async_playwright
 
-        # Store the final response
         final_response = None
+        referer = generate_convincing_referer(url) if self.google_search else None
 
         async def handle_response(finished_response: PlaywrightResponse):
             nonlocal final_response
@@ -360,11 +417,9 @@ class PlaywrightEngine:
                 browser = await p.chromium.launch(**self.__launch_kwargs())
 
             context = await browser.new_context(**self.__context_kwargs())
-            # Finally we are in business
             page = await context.new_page()
             page.set_default_navigation_timeout(self.timeout)
             page.set_default_timeout(self.timeout)
-            # Listen for all responses
             page.on("response", handle_response)
 
             if self.extra_headers:
@@ -377,30 +432,35 @@ class PlaywrightEngine:
                 for script in self.__stealth_scripts():
                     await page.add_init_script(path=script)
 
-            first_response = await page.goto(
-                url,
-                referer=(
-                    generate_convincing_referer(url) if self.google_search else None
-                ),
-            )
+            first_response = await page.goto(url, referer=referer)
             await page.wait_for_load_state(state="domcontentloaded")
+
             if self.network_idle:
                 await page.wait_for_load_state("networkidle")
 
             if self.page_action is not None:
-                page = await self.page_action(page)
+                try:
+                    page = await self.page_action(page)
+                except Exception as e:
+                    log.error(f"Error executing async page_action: {e}")
 
             if self.wait_selector and type(self.wait_selector) is str:
-                waiter = page.locator(self.wait_selector)
-                await waiter.first.wait_for(state=self.wait_selector_state)
-                # Wait again after waiting for the selector, helpful with protections like Cloudflare
-                await page.wait_for_load_state(state="load")
-                await page.wait_for_load_state(state="domcontentloaded")
-                if self.network_idle:
-                    await page.wait_for_load_state("networkidle")
+                try:
+                    waiter = page.locator(self.wait_selector)
+                    await waiter.first.wait_for(state=self.wait_selector_state)
+                    # Wait again after waiting for the selector, helpful with protections like Cloudflare
+                    await page.wait_for_load_state(state="load")
+                    await page.wait_for_load_state(state="domcontentloaded")
+                    if self.network_idle:
+                        await page.wait_for_load_state("networkidle")
+                except Exception as e:
+                    log.error(f"Error waiting for selector {self.wait_selector}: {e}")
 
             # In case we didn't catch a document type somehow
             final_response = final_response if final_response else first_response
+            if not final_response:
+                raise ValueError("Failed to get a response from the page")
+
             # This will be parsed inside `Response`
             encoding = (
                 final_response.headers.get("content-type", "") or "utf-8"
@@ -410,10 +470,20 @@ class PlaywrightEngine:
                 final_response.status
             )
 
+            if self.initial_behaviour:
+                self.initial_behaviour(page)
+
+            history = self._process_response_history(first_response)
+            try:
+                page_content = await page.content()
+            except Exception as e:
+                log.error(f"Error getting page content in async: {e}")
+                page_content = ""
+
             response = Response(
                 url=page.url,
-                text=await page.content(),
-                body=(await page.content()).encode("utf-8"),
+                text=page_content,
+                body=page_content.encode("utf-8"),
                 status=final_response.status,
                 reason=status_text,
                 encoding=encoding,
@@ -423,7 +493,9 @@ class PlaywrightEngine:
                 },
                 headers=await first_response.all_headers(),
                 request_headers=await first_response.request.all_headers(),
-                **self.adaptor_arguments
+                **self.adaptor_arguments,
             )
             await page.close()
+            await context.close()
+
         return response
