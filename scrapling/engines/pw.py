@@ -361,6 +361,9 @@ class PlaywrightEngine:
                 page.on("response", self.response_handler)
             page.on("response", handle_response)
 
+            if self.initial_behaviour:
+                self.initial_behaviour(page)
+
             if self.extra_headers:
                 page.set_extra_http_headers(self.extra_headers)
 
@@ -522,9 +525,6 @@ class PlaywrightEngine:
             status_text = final_response.status_text or StatusText.get(
                 final_response.status
             )
-
-            if self.initial_behaviour:
-                self.initial_behaviour(page)
 
             history = await self._async_process_response_history(first_response)
             try:
