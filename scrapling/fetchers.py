@@ -488,6 +488,7 @@ class StealthyFetcher(BaseFetcher):
             disable_resources=disable_resources,
             wait_selector_state=wait_selector_state,
             response_handler=response_handler,
+            initial_behaviour=initial_behaviour,
             adaptor_arguments={**cls._generate_parser_arguments(), **custom_config},
             additional_arguments=additional_arguments or {},
         )
