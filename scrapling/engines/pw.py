@@ -361,9 +361,6 @@ class PlaywrightEngine:
                 page.on("response", self.response_handler)
             page.on("response", handle_response)
 
-            if self.initial_behaviour:
-                self.initial_behaviour(page)
-
             if self.extra_headers:
                 page.set_extra_http_headers(self.extra_headers)
 
@@ -379,6 +376,9 @@ class PlaywrightEngine:
 
             if self.network_idle:
                 page.wait_for_load_state("networkidle")
+
+            if self.initial_behaviour:
+                self.initial_behaviour(page)
 
             if self.page_action is not None:
                 try:
