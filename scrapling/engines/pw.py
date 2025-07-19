@@ -477,9 +477,6 @@ class PlaywrightEngine:
             page.set_default_timeout(self.timeout)
             page.on("response", handle_response)
 
-            if self.initial_behaviour:
-                await self.initial_behaviour(page)
-
             if self.extra_headers:
                 await page.set_extra_http_headers(self.extra_headers)
 
@@ -495,6 +492,9 @@ class PlaywrightEngine:
 
             if self.network_idle:
                 await page.wait_for_load_state("networkidle")
+
+            if self.initial_behaviour:
+                await self.initial_behaviour(page)
 
             if self.page_action is not None:
                 try:
