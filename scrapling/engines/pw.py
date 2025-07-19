@@ -477,6 +477,9 @@ class PlaywrightEngine:
             page.set_default_timeout(self.timeout)
             page.on("response", handle_response)
 
+            if self.initial_behaviour:
+                self.initial_behaviour(page)
+
             if self.extra_headers:
                 await page.set_extra_http_headers(self.extra_headers)
 
