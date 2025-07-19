@@ -253,7 +253,7 @@ class CamoufoxEngine:
                 page.on("response", self.response_handler)
 
             if self.initial_behaviour:
-                page.on("response", self.initial_behaviour)
+                self.initial_behaviour(page)
 
             if self.disable_resources:
                 page.route("**/*", intercept_route)
