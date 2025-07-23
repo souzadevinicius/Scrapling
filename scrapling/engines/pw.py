@@ -36,12 +36,12 @@ class PlaywrightEngine:
         disable_webgl: bool = False,
         cdp_url: Optional[str] = None,
         nstbrowser_mode: bool = False,
+        full_load: bool = True,
         nstbrowser_config: Optional[Dict] = None,
         google_search: bool = True,
         extra_headers: Optional[Dict[str, str]] = None,
         response_handler: Optional[Callable] = None,
         initial_behaviour: Optional[Callable] = None,
-        full_load: Optional[bool] = True,
         proxy: Optional[Union[str, Dict[str, str]]] = None,
         adaptor_arguments: Dict = None,
     ):

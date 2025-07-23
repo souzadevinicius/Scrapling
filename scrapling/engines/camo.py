@@ -47,10 +47,10 @@ class CamoufoxEngine:
         proxy: Optional[Union[str, Dict[str, str]]] = None,
         os_randomize: bool = False,
         disable_ads: bool = False,
+        full_load: bool = True,
         geoip: bool = False,
         adaptor_arguments: Dict = None,
         additional_arguments: Dict = None,
-        full_load: Optional[bool] = True,
         response_handler: Optional[Callable] = False,
         initial_behaviour: Optional[Callable] = False,
     ):
