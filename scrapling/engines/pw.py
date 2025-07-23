@@ -372,7 +372,7 @@ class PlaywrightEngine:
                 for script in self.__stealth_scripts():
                     page.add_init_script(path=script)
 
-            first_response = page.goto(url, referer=referer)
+            first_response = page.goto(url, wait_until="commit", referer=referer)
             if self.full_load:
                 page.wait_for_load_state(state="domcontentloaded")
 
@@ -490,7 +490,7 @@ class PlaywrightEngine:
                 for script in self.__stealth_scripts():
                     await page.add_init_script(path=script)
 
-            first_response = await page.goto(url, referer=referer)
+            first_response = await page.goto(url, wait_until="commit", referer=referer)
             if self.full_load:
                 await page.wait_for_load_state(state="domcontentloaded")
 

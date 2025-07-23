@@ -262,7 +262,7 @@ class CamoufoxEngine:
             if self.extra_headers:
                 page.set_extra_http_headers(self.extra_headers)
 
-            first_response = page.goto(url, referer=referer)
+            first_response = page.goto(url, wait_until="commit", referer=referer)
             if self.full_load:
                 page.wait_for_load_state(state="domcontentloaded")
 
@@ -359,7 +359,7 @@ class CamoufoxEngine:
             if self.extra_headers:
                 await page.set_extra_http_headers(self.extra_headers)
 
-            first_response = await page.goto(url, referer=referer)
+            first_response = await page.goto(url, wait_until="commit", referer=referer)
             if self.full_load:
                 await page.wait_for_load_state(state="domcontentloaded")
 
