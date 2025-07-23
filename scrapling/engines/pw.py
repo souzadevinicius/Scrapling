@@ -393,8 +393,8 @@ class PlaywrightEngine:
                     waiter = page.locator(self.wait_selector)
                     waiter.first.wait_for(state=self.wait_selector_state)
                     # Wait again after waiting for the selector, helpful with protections like Cloudflare
-                    page.wait_for_load_state(state="load")
                     if self.full_load:
+                        page.wait_for_load_state(state="load")
                         page.wait_for_load_state(state="domcontentloaded")
                     if self.network_idle:
                         page.wait_for_load_state("networkidle")
@@ -510,9 +510,9 @@ class PlaywrightEngine:
                 try:
                     waiter = page.locator(self.wait_selector)
                     await waiter.first.wait_for(state=self.wait_selector_state)
-                    # Wait again after waiting for the selector, helpful with protections like Cloudflare
-                    await page.wait_for_load_state(state="load")
                     if self.full_load:
+                        # Wait again after waiting for the selector, helpful with protections like Cloudflare
+                        await page.wait_for_load_state(state="load")
                         await page.wait_for_load_state(state="domcontentloaded")
                     if self.network_idle:
                         await page.wait_for_load_state("networkidle")
