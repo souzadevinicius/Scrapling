@@ -50,6 +50,7 @@ class CamoufoxEngine:
         geoip: bool = False,
         adaptor_arguments: Dict = None,
         additional_arguments: Dict = None,
+        full_load: Optional[bool] = True,
         response_handler: Optional[Callable] = False,
         initial_behaviour: Optional[Callable] = False,
     ):
@@ -100,7 +101,7 @@ class CamoufoxEngine:
         self.response_handler = response_handler
         self.initial_behaviour = initial_behaviour
         self.wait = check_type_validity(wait, [int, float], 0)
-
+        self.full_load = full_load
         # Page action callable validation
         self.page_action = None
         if page_action is not None:
@@ -262,7 +263,8 @@ class CamoufoxEngine:
                 page.set_extra_http_headers(self.extra_headers)
 
             first_response = page.goto(url, referer=referer)
-            page.wait_for_load_state(state="domcontentloaded")
+            if self.full_load:
+                page.wait_for_load_state(state="domcontentloaded")
 
             if self.network_idle:
                 page.wait_for_load_state("networkidle")
@@ -279,7 +281,8 @@ class CamoufoxEngine:
                     waiter.first.wait_for(state=self.wait_selector_state)
                     # Wait again after waiting for the selector, helpful with protections like Cloudflare
                     page.wait_for_load_state(state="load")
-                    page.wait_for_load_state(state="domcontentloaded")
+                    if self.full_load:
+                        page.wait_for_load_state(state="domcontentloaded")
                     if self.network_idle:
                         page.wait_for_load_state("networkidle")
                 except Exception as e:
@@ -357,7 +360,8 @@ class CamoufoxEngine:
                 await page.set_extra_http_headers(self.extra_headers)
 
             first_response = await page.goto(url, referer=referer)
-            await page.wait_for_load_state(state="domcontentloaded")
+            if self.full_load:
+                await page.wait_for_load_state(state="domcontentloaded")
 
             if self.network_idle:
                 await page.wait_for_load_state("networkidle")
@@ -374,7 +378,8 @@ class CamoufoxEngine:
                     await waiter.first.wait_for(state=self.wait_selector_state)
                     # Wait again after waiting for the selector, helpful with protections like Cloudflare
                     await page.wait_for_load_state(state="load")
-                    await page.wait_for_load_state(state="domcontentloaded")
+                    if self.full_load:
+                        await page.wait_for_load_state(state="domcontentloaded")
                     if self.network_idle:
                         await page.wait_for_load_state("networkidle")
                 except Exception as e:

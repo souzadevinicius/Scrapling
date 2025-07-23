@@ -41,6 +41,7 @@ class PlaywrightEngine:
         extra_headers: Optional[Dict[str, str]] = None,
         response_handler: Optional[Callable] = None,
         initial_behaviour: Optional[Callable] = None,
+        full_load: Optional[bool] = True,
         proxy: Optional[Union[str, Dict[str, str]]] = None,
         adaptor_arguments: Dict = None,
     ):
@@ -87,7 +88,7 @@ class PlaywrightEngine:
         self.wait = check_type_validity(wait, [int, float], 0)
         self.response_handler = response_handler
         self.initial_behaviour = initial_behaviour
-
+        self.full_load = full_load
         if page_action is not None:
             if callable(page_action):
                 self.page_action = page_action
@@ -372,7 +373,8 @@ class PlaywrightEngine:
                     page.add_init_script(path=script)
 
             first_response = page.goto(url, referer=referer)
-            page.wait_for_load_state(state="domcontentloaded")
+            if self.full_load:
+                page.wait_for_load_state(state="domcontentloaded")
 
             if self.network_idle:
                 page.wait_for_load_state("networkidle")
@@ -392,7 +394,8 @@ class PlaywrightEngine:
                     waiter.first.wait_for(state=self.wait_selector_state)
                     # Wait again after waiting for the selector, helpful with protections like Cloudflare
                     page.wait_for_load_state(state="load")
-                    page.wait_for_load_state(state="domcontentloaded")
+                    if self.full_load:
+                        page.wait_for_load_state(state="domcontentloaded")
                     if self.network_idle:
                         page.wait_for_load_state("networkidle")
                 except Exception as e:
@@ -488,7 +491,8 @@ class PlaywrightEngine:
                     await page.add_init_script(path=script)
 
             first_response = await page.goto(url, referer=referer)
-            await page.wait_for_load_state(state="domcontentloaded")
+            if self.full_load:
+                await page.wait_for_load_state(state="domcontentloaded")
 
             if self.network_idle:
                 await page.wait_for_load_state("networkidle")
@@ -508,7 +512,8 @@ class PlaywrightEngine:
                     await waiter.first.wait_for(state=self.wait_selector_state)
                     # Wait again after waiting for the selector, helpful with protections like Cloudflare
                     await page.wait_for_load_state(state="load")
-                    await page.wait_for_load_state(state="domcontentloaded")
+                    if self.full_load:
+                        await page.wait_for_load_state(state="domcontentloaded")
                     if self.network_idle:
                         await page.wait_for_load_state("networkidle")
                 except Exception as e:
